@@ -30,7 +30,7 @@ class XmlFile:
         """
         TODO:
             "us-bibliographic-data-grant"
-            "abstract"
+            "abstract" : Done
             "description"
             "claims"
         """
@@ -41,6 +41,7 @@ class XmlFile:
         abstract = soup.find("abstract")
         description = soup.find("description")
         self._format_data_grant(data_grant)
+        print(self._format_abstract(abstract))
 
     def _format_data_grant(self, data_grant: SoupType):
         """
@@ -121,11 +122,17 @@ class XmlFile:
             "classifications-ipcr")))
 
     def _format_abstract(self, abstract: SoupType):
-        p = abstract.find("p")
-        if abstract is None or p is None:
+        pTag = abstract.find("p")
+        if abstract is None or pTag is None:
             return "Can't find the abstract text!!!!! pls check abstract use 'p' and inside the xml file"
+        text = pTag.get_text()
+        return text
 
-        return p.get_text()
+    def _format_description(self, description: SoupType):
+        pass
+
+    def _format_claims(self, claims: SoupType):
+        pass
 
 
 if __name__ == '__main__':
