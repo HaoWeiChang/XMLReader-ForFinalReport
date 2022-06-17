@@ -2,7 +2,6 @@ from typing import List, Union
 from bs4 import BeautifulSoup, NavigableString, Tag
 import os
 
-
 SoupType = Union[Tag, NavigableString, int]
 
 
@@ -24,26 +23,87 @@ class XmlFile:
         self.abstract = ""
         self.description = ""
         self.claims = ""
+        self.create()
         pass
 
-    def answer_a(self) -> None:
+    def create(self) -> None:
         """
         TODO:
             "us-bibliographic-data-grant"
             "abstract" : Done
             "description"
-            "claims"
+            "claims" : Done
         """
-
         xml_text = open(self.path, "r").read()
         soup = BeautifulSoup(xml_text, 'xml')
-        data_grant = soup.find("us-bibliographic-data-grant")
-        abstract = soup.find("abstract")
-        description = soup.find("description")
-        self._format_data_grant(data_grant)
-        print(self._format_abstract(abstract))
+        self.data_grant = self.__format_data_grant(
+            soup.find("us-bibliographic-data-grant"))
+        self.abstract = self.__format_abstract(soup.find("abstract"))
+        self.description = self.__format_description(soup.find("description"))
+        self.claims = self.__format_claims(
+            soup.find("us-claims-statement"), soup.find("claims"))
 
-    def _format_data_grant(self, data_grant: SoupType):
+    def __format_data_grant(self, data_grant: SoupType) -> str:
+
+        def __format_name(Tag: SoupType) -> str:
+            return f'{Tag.find("first-name").get_text()} {Tag.find("last-name").get_text()}'
+
+        def __format_docID(docID: SoupType) -> str:
+            __country = docID.find("country")
+            __doc_number = docID.find("doc-number")
+            __kind = docID.find("kind")
+            __date = docID.find("date")
+            country = __country.get_text() if __country else ""
+            doc_number = __doc_number.get_text() if __doc_number else ""
+            kind = __kind.get_text() if __kind else ""
+            date = __date.get_text() if __date else ""
+
+            return f'{country}{int(doc_number)}{kind} :: {date}'
+
+        def __format_title(title: SoupType) -> str:
+            return "Title: {}".format(title.get_text().upper())
+
+        def __format_pub_ref(pubRef: SoupType) -> str:
+            if pubRef is None:
+                return ""
+            return "Publication Reference: {}".format(__format_docID(pubRef))
+
+        def __format_app_ref(appRef: SoupType) -> str:
+            if appRef is None:
+                return ""
+            return "Application Reference: {}".format(__format_docID(appRef))
+
+        def __format_term_extension(termExt: SoupType) -> str:
+            if termExt is None:
+                return ""
+            res = "Notice: Subject to any disclaimer, the term of this patent is extended or adjusted under 35 U.S.C. 154(b) by {} days."
+            _extension = termExt.find("us-term-extension")
+            if _extension is None:
+                return res.format(0)
+            return res.format(_extension.get_text())
+
+        def __format_class_ipcr(ipcrs: SoupType) -> str:
+            res = "Int. Cl. :{}"
+            ipcrtxt = ""
+            ipcrList = ipcrs.find_all("classification-ipcr")
+            for ipce in ipcrList:
+                dateText = ipce.find("date").get_text()
+                section = ipce.find("section").get_text()
+                classText = ipce.find("class").get_text()
+                subclass = ipce.find("subclass").get_text()
+                mainGroup = ipce.find("main-group").get_text()
+                subGroup = ipce.find("subgroup").get_text()
+                ipcrtxt += f'\n\t{section}{classText}{subclass} {mainGroup}/{subGroup}\t({dateText})'
+            return res.format(ipcrtxt)
+
+        def __format_examiners(examiners: SoupType) -> str:
+            primaryStr = "Primary Examiner -- {}".format(
+                __format_name(examiners.find("primary-examiner")))
+            if examiners.find("assistant-examiner"):
+                assistantStr = "Assistant Eaminer -- {}".format(
+                    __format_name(examiners.find("assistant-examiner")))
+                return f'{primaryStr}\n{assistantStr}'
+            return primaryStr
         """
         TODO:
             "publication-reference" : Done
@@ -58,86 +118,59 @@ class XmlFile:
             "us-field-of-classification-search"
             "us-related-documents"
             "us-parties"
-            "examiners"
+            "examiners" : Done
             ""
         """
 
-        def _format_docID(docID: SoupType):
-            __country = docID.find("country")
-            __doc_number = docID.find("doc-number")
-            __kind = docID.find("kind")
-            __date = docID.find("date")
-            country = __country.get_text() if __country else ""
-            doc_number = __doc_number.get_text() if __doc_number else ""
-            kind = __kind.get_text() if __kind else ""
-            date = __date.get_text() if __date else ""
-
-            return f'{country}{int(doc_number)}{kind} :: {date}'
-
-        def _format_title(title: SoupType):
-            return "Title: {}".format(title.get_text().upper())
-
-        def _format_inventor(inventor: SoupType):
-            return
-
-        def _format_pub_ref(pubRef: SoupType):
-            if pubRef is None:
-                return ""
-            return "Publication Reference: {}".format(_format_docID(pubRef))
-
-        def _format_app_ref(appRef: SoupType):
-            if appRef is None:
-                return ""
-            return "Application Reference: {}".format(_format_docID(appRef))
-
-        def _format_term_extension(termExt: SoupType):
-            if termExt is None:
-                return ""
-            res = "Notice: Subject to any disclaimer, the term of this patent is extended or adjusted under 35 U.S.C. 154(b) by {} days."
-            _extension = termExt.find("us-term-extension")
-            if _extension is None:
-                return res.format(0)
-            return res.format(_extension.get_text())
-
-        def _format_class_ipcr(ipcrs: SoupType):
-            res = "Int. Cl. :{}"
-            ipcrtxt = ""
-            ipcrList = ipcrs.find_all("classification-ipcr")
-            for ipce in ipcrList:
-                dateText = ipce.find("date").get_text()
-                section = ipce.find("section").get_text()
-                classText = ipce.find("class").get_text()
-                subclass = ipce.find("subclass").get_text()
-                mainGroup = ipce.find("main-group").get_text()
-                subGroup = ipce.find("subgroup").get_text()
-                ipcrtxt += f'\n\t{section}{classText}{subclass} {mainGroup}/{subGroup}\t({dateText})'
-            return res.format(ipcrtxt)
-
-        print(_format_title(data_grant.find("invention-title")))
-        print(_format_pub_ref(data_grant.find("publication-reference")))
-        print(_format_app_ref(data_grant.find("application-reference")))
-        print(_format_term_extension(
+        print(__format_title(data_grant.find("invention-title")))
+        print(__format_pub_ref(data_grant.find("publication-reference")))
+        print(__format_app_ref(data_grant.find("application-reference")))
+        print(__format_term_extension(
             data_grant.find("us-term-of-grant")))
-        print(_format_class_ipcr(data_grant.find(
+        print(__format_class_ipcr(data_grant.find(
             "classifications-ipcr")))
+        print(__format_examiners(data_grant.find("examiners")))
+        return ""
 
-    def _format_abstract(self, abstract: SoupType):
+    def __format_abstract(self, abstract: SoupType) -> str:
+        if abstract is None:
+            return "Can't find the abstract text!!!!!"
         pTag = abstract.find("p")
-        if abstract is None or pTag is None:
-            return "Can't find the abstract text!!!!! pls check abstract use 'p' and inside the xml file"
-        text = pTag.get_text()
-        return text
+        return pTag.get_text() if pTag else ""
 
-    def _format_description(self, description: SoupType):
+    def __format_description(self, description: SoupType) -> str:
+        if description is None:
+            return "Can't find the description text!!!!!"
+        return description.get_text()
+
+    def __format_claims(self, state: SoupType, claims: SoupType) -> str:
+        res = state.get_text() if state else "Can't find the claim statement"
+        claims = claims.get_text() if claims else "Can't find the claims"
+        return res+claims
+
+    def show(self):
+        print(self.data_grant)
+        print("\n---Abstract---\n")
+        print(self.abstract)
+        print("\n---Description---\n")
+        print(self.description)
+        print("\n---Claims---\n")
+        print(self.claims)
         pass
 
-    def _format_claims(self, claims: SoupType):
-        pass
+    def save(self):
+        with open(self.name+".txt", "w") as file:
+            file.write(self.data_grant)
+            file.write("\n---Abstract---\n")
+            file.write(self.abstract)
+            file.write("\n---Description---\n")
+            file.write(self.description)
+            file.write("\n---Claims---\n")
+            file.write(self.claims)
+        file.close()
+        return
 
 
 if __name__ == '__main__':
     f = get_file()
-    # a = int(input("input number:"))
-    xml = XmlFile(f[0])
-    xml.answer_a()
-    # xml.answer_b_c()
+    xml = XmlFile(f[9])
