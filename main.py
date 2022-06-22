@@ -45,7 +45,26 @@ class XmlFile:
 
     def __format_data_grant(self, data_grant: SoupType) -> str:
         def __format_name(Tag: SoupType) -> str:
-            return f'{Tag.find("first-name").get_text()} {Tag.find("last-name").get_text()}'
+            firstTag = Tag.find("first-name")
+            lastTag = Tag.find("last-name")
+            if firstTag is None or lastTag is None:
+                return ""
+            first = firstTag.get_text()
+            last = lastTag.get_text()
+            return f'{first} {last}'
+
+        def __format_address(Tag: SoupType) -> str:
+            address = []
+            cityTag = Tag.find("city")
+            stateTag = Tag.find("state")
+            countryTag = Tag.find("country")
+            if cityTag:
+                address.append(cityTag.get_text())
+            if stateTag:
+                address.append(stateTag.get_text())
+            if countryTag:
+                address.append(f"({countryTag.get_text()})")
+            return ",".join(address)
 
         def __format_docID(docID: SoupType) -> str:
             __country = docID.find("country")
@@ -56,11 +75,39 @@ class XmlFile:
             doc_number = __doc_number.get_text() if __doc_number else ""
             kind = __kind.get_text() if __kind else ""
             date = __date.get_text() if __date else ""
-
-            return f'{country}{int(doc_number)}{kind} :: {date}'
+            if kind == "" and country == "" and doc_number == "" and kind == "":
+                return ""
+            return f'{country}{doc_number}{kind} :: {date}'
 
         def __format_title(title: SoupType) -> str:
             return "Title: {}".format(title.get_text().upper())
+
+        def __format_parties(Tag: SoupType) -> str:
+            applicantsList = []
+            inventorsList = []
+            agentsList = []
+            applicants = Tag.find_all("us-applicant")
+            inventors = Tag.find_all("inventor")
+            agents = Tag.find_all("agent")
+            for item in applicants:
+                applicantsList.append(__format_name(item))
+
+            for item in inventors:
+                inventorsList.append(__format_name(item)+' ' +
+                                     __format_address(item))
+
+            for item in agents:
+                name = __format_name(item)
+                if name != "":
+                    agentsList.append(name)
+                    continue
+                orgname = item.find("orgname")
+                if orgname:
+                    agentsList.append(orgname.get_text())
+            applicantText = ". ".join(applicantsList)
+            inventorText = ". ".join(inventorsList)
+            agentsText = ". ".join(agentsList)
+            return "Applicants:{}\nInventor:{}\nAttorney, Agent, or Firm:{}""".format(applicantText, inventorText, agentsText)
 
         def __format_pub_ref(pubRef: SoupType) -> str:
             if pubRef is None:
@@ -114,16 +161,13 @@ class XmlFile:
             return "Field of Classification Search: {}".format(res)
 
         def __format_related_doc(related: SoupType) -> str:
-            privision = related.find("us-provisional-application")
-            prvision_doc = __format_docID(privision)
             publication = related.find("related-publication")
-            publication_doc = __format_docID(publication)
-            return "Prior Publication Data: {}\nRelated U.S. Application Data: {}".format(publication_doc, prvision_doc)
-
-        def __format_us_parties(parties: SoupType) -> str:
-            applicants = parties.findAll("us-applicant")
-
-            pass
+            publication_doc = "Prior Publication Data: {}".format(
+                __format_docID(publication))if publication else ""
+            privision = related.find("us-provisional-application")
+            privision_doc = "Related U.S. Application Data: {}".format(__format_docID(
+                privision)) if privision else ""
+            return "\n".join([publication_doc, privision_doc])
 
         def __format_examiners(examiners: SoupType) -> str:
             primaryStr = "Primary Examiner -- {}".format(
@@ -133,6 +177,23 @@ class XmlFile:
                     __format_name(examiners.find("assistant-examiner")))
                 return f'{primaryStr}\n{assistantStr}'
             return primaryStr
+
+        def __format_ref_cited(cited: SoupType):
+            formatList = []
+            citations = cited.find_all("us-citation")
+            for i in citations:
+                formatList.append(__format_docID(i))
+            formatList = list(filter(None, formatList))
+            res = ", ".join(formatList)
+            othercits = cited.find_all("othercit")
+            othercitList = []
+            othercitRes = ""
+            if othercits:
+                for i in othercits:
+                    othercitList.append(i.get_text())
+                othercitRes = "\n".join(othercitList)
+                res += f"\nOTHER PUBLICATIONS:\n{othercitRes}"
+            return "References Cited: {}".format(res)
         """
         TODO:
             "publication-reference" : Done
@@ -146,11 +207,12 @@ class XmlFile:
             "number-of-claims", "us-exemplary-claim" : Pass
             "us-field-of-classification-search" : Done
             "us-related-documents" : Done
-            "us-parties"
+            "us-parties" : Done
             "examiners" : Done
         """
 
         print(__format_title(data_grant.find("invention-title")))
+        print(__format_parties(data_grant.find("us-parties")))
         print(__format_pub_ref(data_grant.find("publication-reference")))
         print(__format_app_ref(data_grant.find("application-reference")))
         print(__format_term_extension(
@@ -162,6 +224,7 @@ class XmlFile:
         print(__format_class_national(data_grant.find("classification-national")))
         print(__format_class_search(data_grant.find(
             "us-field-of-classification-search")))
+        print(__format_ref_cited(data_grant.find("us-references-cited")))
         return ""
 
     def __format_abstract(self, abstract: SoupType) -> str:
@@ -205,4 +268,6 @@ class XmlFile:
 
 if __name__ == '__main__':
     f = get_file()
-    xml = XmlFile(f[0])
+    while True:
+        p = int(input())
+        xml = XmlFile(f[p])
