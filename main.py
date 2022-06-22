@@ -44,9 +44,6 @@ class XmlFile:
             soup.find("us-claims-statement"), soup.find("claims"))
 
     def __format_data_grant(self, data_grant: SoupType) -> str:
-        def __format() -> str:
-            pass
-
         def __format_name(Tag: SoupType) -> str:
             return f'{Tag.find("first-name").get_text()} {Tag.find("last-name").get_text()}'
 
@@ -98,13 +95,22 @@ class XmlFile:
                 ipcrtxt += f'\n\t{section}{classText}{subclass} {mainGroup}/{subGroup}\t({dateText})'
             return res.format(ipcrtxt)
 
+        def __format_class_national(national: SoupType) -> str:
+            res = []
+            mainTag = national.find("main-classification")
+            res.append(mainTag.get_text()if mainTag else "")
+            furthers = national.find_all("further-classification")
+            for i in furthers:
+                res.append(i.get_text())
+            return "U.S.Cl.(USPC):{}".format(",".join(res))
+
         def __format_class_search(search: SoupType) -> str:
             textList = []
             nationals = search.find_all("classification-national")
             for i in nationals:
                 item = i.find("main-classification")
                 textList.append(item.get_text())
-            res = ", ".join(textList)
+            res = ",".join(textList)
             return "Field of Classification Search: {}".format(res)
 
         def __format_related_doc(related: SoupType) -> str:
@@ -134,25 +140,26 @@ class XmlFile:
             "us-application-series-code" : Pass
             "us-term-of-grant" : Done
             "classifications-ipcr" : Done
-            "classification-national"
+            "classification-national" : Done
             "invention-title" : Done
             "us-references-cited"
-            "number-of-claims", "us-exemplary-claim"
-            "us-field-of-classification-search"
+            "number-of-claims", "us-exemplary-claim" : Pass
+            "us-field-of-classification-search" : Done
             "us-related-documents" : Done
             "us-parties"
             "examiners" : Done
         """
 
-        # print(__format_title(data_grant.find("invention-title")))
-        # print(__format_pub_ref(data_grant.find("publication-reference")))
-        # print(__format_app_ref(data_grant.find("application-reference")))
-        # print(__format_term_extension(
-        #     data_grant.find("us-term-of-grant")))
-        # print(__format_related_doc(data_grant.find("us-related-documents")))
-        # print(__format_class_ipcr(data_grant.find(
-        #     "classifications-ipcr")))
-        # print(__format_examiners(data_grant.find("examiners")))
+        print(__format_title(data_grant.find("invention-title")))
+        print(__format_pub_ref(data_grant.find("publication-reference")))
+        print(__format_app_ref(data_grant.find("application-reference")))
+        print(__format_term_extension(
+            data_grant.find("us-term-of-grant")))
+        print(__format_related_doc(data_grant.find("us-related-documents")))
+        print(__format_class_ipcr(data_grant.find(
+            "classifications-ipcr")))
+        print(__format_examiners(data_grant.find("examiners")))
+        print(__format_class_national(data_grant.find("classification-national")))
         print(__format_class_search(data_grant.find(
             "us-field-of-classification-search")))
         return ""
