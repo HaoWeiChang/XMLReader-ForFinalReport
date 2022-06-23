@@ -1,6 +1,11 @@
+import re
+import os
+import string
 from typing import List, Union
 from bs4 import BeautifulSoup, NavigableString, Tag
-import os
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize, RegexpTokenizer
+from nltk.probability import FreqDist
 
 SoupType = Union[Tag, NavigableString, int]
 
@@ -19,14 +24,15 @@ class XmlFile:
     def __init__(self, path: str) -> None:
         self.name = "".join(path.split('\\')[-1])
         self.path = path
-        self.data_grant = ""
-        self.abstract = ""
-        self.description = ""
-        self.claims = ""
-        self.create()
+        self.soup = BeautifulSoup
+        self.init()
         pass
 
-    def create(self) -> None:
+    def init(self):
+        xml_text = open(self.path, "r").read()
+        self.soup = BeautifulSoup(xml_text, 'xml')
+
+    def format_save(self) -> None:
         """
         TODO:
             "us-bibliographic-data-grant"
@@ -34,14 +40,17 @@ class XmlFile:
             "description" : Done
             "claims" : Done
         """
-        xml_text = open(self.path, "r").read()
-        soup = BeautifulSoup(xml_text, 'xml')
-        self.data_grant = self.__format_data_grant(
-            soup.find("us-bibliographic-data-grant"))
-        self.abstract = self.__format_abstract(soup.find("abstract"))
-        self.description = self.__format_description(soup.find("description"))
-        self.claims = self.__format_claims(
-            soup.find("us-claims-statement"), soup.find("claims"))
+        res = []
+        res.append(self.__format_data_grant(
+            self.soup.find("us-bibliographic-data-grant")))
+        res.append(self.__format_abstract(self.soup.find("abstract")))
+        res.append(self.__format_description(self.soup.find("description")))
+        res.append(self.__format_claims(
+            self.soup.find("us-claim-statement"), self.soup.find("claims")))
+        contents = "\n".join(res)
+        with open(self.name+".txt", "w") as file:
+            file.write(contents)
+        file.close()
 
     def __format_data_grant(self, data_grant: SoupType) -> str:
         def __format_name(Tag: SoupType) -> str:
@@ -203,29 +212,31 @@ class XmlFile:
             "classifications-ipcr" : Done
             "classification-national" : Done
             "invention-title" : Done
-            "us-references-cited"
+            "us-references-cited" : Done
             "number-of-claims", "us-exemplary-claim" : Pass
             "us-field-of-classification-search" : Done
             "us-related-documents" : Done
             "us-parties" : Done
             "examiners" : Done
         """
-
-        print(__format_title(data_grant.find("invention-title")))
-        print(__format_parties(data_grant.find("us-parties")))
-        print(__format_pub_ref(data_grant.find("publication-reference")))
-        print(__format_app_ref(data_grant.find("application-reference")))
-        print(__format_term_extension(
+        res = []
+        res.append(__format_title(data_grant.find("invention-title")))
+        res.append(__format_parties(data_grant.find("us-parties")))
+        res.append(__format_pub_ref(data_grant.find("publication-reference")))
+        res.append(__format_app_ref(data_grant.find("application-reference")))
+        res.append(__format_term_extension(
             data_grant.find("us-term-of-grant")))
-        print(__format_related_doc(data_grant.find("us-related-documents")))
-        print(__format_class_ipcr(data_grant.find(
+        res.append(__format_related_doc(
+            data_grant.find("us-related-documents")))
+        res.append(__format_class_ipcr(data_grant.find(
             "classifications-ipcr")))
-        print(__format_examiners(data_grant.find("examiners")))
-        print(__format_class_national(data_grant.find("classification-national")))
-        print(__format_class_search(data_grant.find(
+        res.append(__format_examiners(data_grant.find("examiners")))
+        res.append(__format_class_national(
+                   data_grant.find("classification-national")))
+        res.append(__format_class_search(data_grant.find(
             "us-field-of-classification-search")))
-        print(__format_ref_cited(data_grant.find("us-references-cited")))
-        return ""
+        res.append(__format_ref_cited(data_grant.find("us-references-cited")))
+        return "\n".join(res)
 
     def __format_abstract(self, abstract: SoupType) -> str:
         if abstract is None:
@@ -243,31 +254,26 @@ class XmlFile:
         claims = claims.get_text() if claims else "Can't find the claims"
         return res+claims
 
-    def show(self):
-        print(self.data_grant)
-        print("\n---Abstract---\n")
-        print(self.abstract)
-        print("\n---Description---\n")
-        print(self.description)
-        print("\n---Claims---\n")
-        print(self.claims)
-        pass
+class StopWord
 
-    def save(self):
-        with open(self.name+".txt", "w") as file:
-            file.write(self.data_grant)
-            file.write("\n---Abstract---\n")
-            file.write(self.abstract)
-            file.write("\n---Description---\n")
-            file.write(self.description)
-            file.write("\n---Claims---\n")
-            file.write(self.claims)
-        file.close()
-        return
+def find_keyword(xml: XmlFile):
+    wordList = []
+    text = xml.soup.get_text().lower()
+    text = re.sub(r'[0-9]+', '', text)
+    open('text.txt', 'w').write(text)
+    en_stops = set(stopwords.words('english'))
+    tokenizer = RegexpTokenizer(r'\w+')
+    token = tokenizer.tokenize(text)
+    for word in token:
+        if word not in en_stops:
+            wordList.append(word)
+    fdist = FreqDist(wordList)
+    print(fdist.most_common(20))
 
 
 if __name__ == '__main__':
+    # nltk.download('stopwords')
+    # nltk.download('punkt')
     f = get_file()
-    while True:
-        p = int(input())
-        xml = XmlFile(f[p])
+    xml = XmlFile(f[0])
+    find_keyword(xml)
