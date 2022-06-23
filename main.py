@@ -4,6 +4,7 @@ from typing import Any, List
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.probability import FreqDist
+from regex import W
 from patent import Patent
 
 
@@ -43,9 +44,9 @@ def find_combine_keyword(xml: Patent):
             find_pattern = re.compile(key, re.I)
             match = find_pattern.findall(text)
             if len(match) != 0:
-                combineList.append((key, len(match)))
+                combineList.append((f'{i[0]} {j[0]}', len(match)))
     combineList.sort(key=lambda tup: tup[1], reverse=True)
-    print(combineList)
+    return combineList
 
 
 f = get_file()
