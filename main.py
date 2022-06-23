@@ -4,7 +4,6 @@ from typing import Any, List
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.probability import FreqDist
-from regex import W
 from patent import Patent
 
 
@@ -17,7 +16,7 @@ def get_file() -> List[str]:
     return f
 
 
-def find_keyword(xml: Patent, num: int = None) -> list[tuple[Any, int]]:
+def find_keyword(xml: Patent, num: int|None=None) -> list[tuple[Any, int]]:
     wordList = []
     text = xml.soup.get_text()
     text = re.sub(r'[0-9]+', '', text)
