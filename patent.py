@@ -1,7 +1,9 @@
+import re
 from typing import Union
+from nltk.corpus import stopwords
+from nltk.probability import FreqDist
+from nltk.tokenize import RegexpTokenizer
 from bs4 import BeautifulSoup, NavigableString, Tag
-from regex import W
-
 
 SoupType = Union[Tag, NavigableString, int]
 
@@ -11,6 +13,8 @@ class Patent:
         self.name = "".join(path.split('\\')[-1])
         self.path = path
         self.soup = self.__readSoup()
+        self.keywords = []
+        self.combine_keyword = []
         pass
 
     def __readSoup(self) -> BeautifulSoup:
@@ -239,8 +243,43 @@ class Patent:
         claims = claims.get_text() if claims else "Can't find the claims"
         return res+claims
 
+    def __find_keywords(self) -> None:
+        text = self.soup.get_text()
+        en_stops = set(stopwords.words('english'))
+        tokenizer = RegexpTokenizer(r'\b[a-zA-Z]+\b')
+        token = tokenizer.tokenize(text)
+        fdist = FreqDist(token)
+        keywordList = fdist.most_common()
+        self.keywords = [word for word in keywordList if word[0].lower()
+                         not in en_stops]
 
-if __name__ == '__main__':
-    xml = Patent(
-        'D:/project/XMLReader/US08438662-20130514/US08438662-20130514.XML')
-    xml.format_save()
+    def __find_combine_keywords(self) -> None:
+        keyList = self.keywords
+        text = self.soup.get_text()
+        keywordList = [x for x in keyList if x[1] > 1]
+        combineList = []
+        for i in keywordList:
+            for j in keywordList:
+                find_pattern = re.compile(
+                    r'\b{} {}\b'.format(i[0], j[0]), re.I)
+                match = find_pattern.findall(text)
+                if len(match) > 1:
+                    combineList.append((match[0], len(match)))
+
+        self.combine_keyword = combineList.sort(
+            key=lambda tup: tup[1], reverse=True)
+
+    def get_keywords(self, num: int = 20):
+        if len(self.keywords) is 0:
+            self.__find_keywords()
+        return self.keywords[:num]
+
+    def get_combine_keywords(self, num: int = 20):
+        if len(self.keywords) is 0:
+            self.__find_keywords()
+        if len(self.combine_keyword) is 0:
+            self.__find_combine_keywords()
+        return self.combine_keyword[:num]
+
+
+paten_list = list[Patent]
