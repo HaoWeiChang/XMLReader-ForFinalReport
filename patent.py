@@ -1,9 +1,11 @@
+from ast import keyword
 import re
 from typing import Union
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk.tokenize import RegexpTokenizer
 from bs4 import BeautifulSoup, NavigableString, Tag
+from regex import W
 
 SoupType = Union[Tag, NavigableString, int]
 
@@ -246,17 +248,35 @@ class Patent:
     def __find_keywords(self) -> None:
         text = self.soup.get_text()
         en_stops = set(stopwords.words('english'))
-        tokenizer = RegexpTokenizer(r'\b[a-zA-Z]+\b')
+        tokenizer = RegexpTokenizer('\w+[\'\.]\w+|[a-zA-Z]+\d+|[a-zA-Z]+')
         token = tokenizer.tokenize(text)
         fdist = FreqDist(token)
         keywordList = fdist.most_common()
         self.keywords = [word for word in keywordList if word[0].lower()
                          not in en_stops]
 
+    def find_test(self, length: int = 1) -> None:
+        text = self.soup.get_text()
+        calculate = {}
+        keywords = []
+        tokenizer = RegexpTokenizer('\w+[\'\.]\w+|[a-zA-Z]+\d+|[a-zA-Z]+')
+        token = tokenizer.tokenize(text)
+        for i in range(0, len(token)-1):
+            word = f"{token[i]} {token[i+1]}"
+            if word not in calculate:
+                calculate[word] = 1
+            else:
+                calculate[word] += 1
+
+        for key, values in calculate.items():
+            keywords.append((key, values))
+        keywords.sort(key=lambda tup: tup[1], reverse=True)
+        print(keywords)
+
     def __find_combine_keywords(self) -> None:
         keyList = self.keywords
         text = self.soup.get_text()
-        keywordList = [x for x in keyList if x[1] > 1]
+        keywordList = [x for x in keyList if x[1] > 4]
         combineList = []
         for i in keywordList:
             for j in keywordList:
@@ -265,21 +285,20 @@ class Patent:
                 match = find_pattern.findall(text)
                 if len(match) > 1:
                     combineList.append((match[0], len(match)))
+        combineList.sort(key=lambda tup: tup[1], reverse=True)
+        self.combine_keyword = combineList
 
-        self.combine_keyword = combineList.sort(
-            key=lambda tup: tup[1], reverse=True)
-
-    def get_keywords(self, num: int = 20):
-        if len(self.keywords) is 0:
+    def get_keywords(self, num: int = 0):
+        if len(self.keywords) == 0:
             self.__find_keywords()
-        return self.keywords[:num]
+        return self.keywords[:num] if num else self.keywords
 
-    def get_combine_keywords(self, num: int = 20):
-        if len(self.keywords) is 0:
+    def get_combine_keywords(self, num: int = 0):
+        if len(self.keywords) == 0:
             self.__find_keywords()
-        if len(self.combine_keyword) is 0:
+        if len(self.combine_keyword) == 0:
             self.__find_combine_keywords()
-        return self.combine_keyword[:num]
+        return self.combine_keyword[:num] if num else self.combine_keyword
 
 
 paten_list = list[Patent]

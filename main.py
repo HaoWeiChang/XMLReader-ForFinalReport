@@ -1,5 +1,5 @@
 import os
-from patent import Patent, check_nltk
+from patent import Patent
 
 
 def get_file() -> list[str]:
@@ -11,8 +11,9 @@ def get_file() -> list[str]:
     return f
 
 
-check_nltk()
 f = get_file()
 xml = Patent(f[0])
-# xml.format_save()
-# print(find_combine_keyword(xml))
+# # xml.format_save()
+xml.find_test()
+# print(xml.get_keywords())
+# print(xml.get_combine_keywords())
