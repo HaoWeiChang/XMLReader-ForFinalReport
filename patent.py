@@ -248,7 +248,7 @@ class Patent:
     def __find_keywords(self) -> None:
         text = self.soup.get_text()
         en_stops = set(stopwords.words('english'))
-        tokenizer = RegexpTokenizer('\w+[\'\.]\w+|[a-zA-Z]+\d+|[a-zA-Z]+')
+        tokenizer = RegexpTokenizer('\\w+[\'\\.]\\w+|[a-zA-Z]+\\d+|[a-zA-Z]+')
         token = tokenizer.tokenize(text)
         fdist = FreqDist(token)
         keywordList = fdist.most_common()
@@ -259,7 +259,7 @@ class Patent:
         text = self.soup.get_text()
         calculate = {}
         keywords = []
-        tokenizer = RegexpTokenizer('\w+[\'\.]\w+|[a-zA-Z]+\d+|[a-zA-Z]+')
+        tokenizer = RegexpTokenizer('\\w+[\'\\.]\\w+|[a-zA-Z]+\\d+|[a-zA-Z]+')
         token = tokenizer.tokenize(text)
         for i in range(0, len(token)-1):
             word = f"{token[i]} {token[i+1]}"
@@ -269,7 +269,8 @@ class Patent:
                 calculate[word] += 1
 
         for key, values in calculate.items():
-            keywords.append((key, values))
+            if values > 1:
+                keywords.append((key, values))
         keywords.sort(key=lambda tup: tup[1], reverse=True)
         print(keywords)
 
