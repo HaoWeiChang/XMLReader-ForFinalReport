@@ -1,11 +1,11 @@
 from ast import keyword
 import re
+from signal import raise_signal
 from typing import Union
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk.tokenize import RegexpTokenizer
 from bs4 import BeautifulSoup, NavigableString, Tag
-from regex import W
 
 SoupType = Union[Tag, NavigableString, int]
 
@@ -17,7 +17,6 @@ class Patent:
         self.soup = self.__readSoup()
         self.keywords = []
         self.combine_keyword = []
-        pass
 
     def __readSoup(self) -> BeautifulSoup:
         xml_text = open(self.path, "r").read()
@@ -255,26 +254,36 @@ class Patent:
         self.keywords = [word for word in keywordList if word[0].lower()
                          not in en_stops]
 
-    def find_test(self, length: int = 1) -> None:
+    def find_combine_keywords(self, length: int = 2, show: int = 0) -> None:
+        if length < 2 or length > 5:
+            raise Exception(f'目前僅提供2~5個字組合關鍵字')
         text = self.soup.get_text()
         calculate = {}
         keywords = []
+        en_stops = set(stopwords.words('english'))
         tokenizer = RegexpTokenizer('\\w+[\'\\.]\\w+|[a-zA-Z]+\\d+|[a-zA-Z]+')
-        token = tokenizer.tokenize(text)
-        for i in range(0, len(token)-1):
-            word = f"{token[i]} {token[i+1]}"
-            if word not in calculate:
-                calculate[word] = 1
-            else:
-                calculate[word] += 1
+        lines = list(filter(None, text.split('\n')))
+        for line in lines:
+            content = tokenizer.tokenize(line.lower())
+            no_stop = [w for w in content if w not in en_stops and w != '']
+            if len(no_stop) < length:
+                continue
+            for index in range(0, len(no_stop)-length):
+                word = " ".join(no_stop[index:index+length])
+                if word not in calculate:
+                    calculate[word] = 1
+                else:
+                    calculate[word] += 1
 
         for key, values in calculate.items():
             if values > 1:
                 keywords.append((key, values))
         keywords.sort(key=lambda tup: tup[1], reverse=True)
-        print(keywords)
+        if show < 0 or show > len(keywords):
+            raise Exception(f"請輸入範圍0~{len(keywords)}")
+        return keywords[:show] if show else keywords[:show]
 
-    def __find_combine_keywords(self) -> None:
+    def __find_test(self) -> None:
         keyList = self.keywords
         text = self.soup.get_text()
         keywordList = [x for x in keyList if x[1] > 4]
@@ -300,6 +309,9 @@ class Patent:
         if len(self.combine_keyword) == 0:
             self.__find_combine_keywords()
         return self.combine_keyword[:num] if num else self.combine_keyword
+
+    def get_name(self):
+        return self.name
 
 
 paten_list = list[Patent]

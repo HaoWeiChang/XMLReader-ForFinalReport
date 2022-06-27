@@ -1,19 +1,15 @@
-import os
-from patent import Patent
+from interface import App
 
+try:
+    app = App()
+    app.run()
+except Exception:
+    print('發生不明原因')
 
-def get_file() -> list[str]:
-    f = []
-    for (dirpath, _, filenames) in os.walk(os.getcwd()):
-        for name in filenames:
-            if name.endswith(".XML"):
-                f.append(os.path.join(dirpath, name))
-    return f
-
-
-f = get_file()
-xml = Patent(f[0])
-# # xml.format_save()
-xml.find_test()
+# f = get_file()
+# xml = Patent(f[0])
+# xml.format_save()
+# xml.find_test(2)
+# print('-'*10)
 # print(xml.get_keywords())
 # print(xml.get_combine_keywords())
