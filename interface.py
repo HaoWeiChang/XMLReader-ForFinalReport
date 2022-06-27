@@ -45,7 +45,7 @@ class App:
             return self.__get_common_word(patent)
 
     def __choose_menu(self) -> int:
-        modes = ['匯出格式化文字檔', '專利文章關鍵字', '專利文章組合關鍵字', '搜尋高度相關文章', '顯示常見字']
+        modes = ['匯出格式化文字檔', '專利文章關鍵字', '專利文章組合關鍵字', '搜尋高度相關文章', '顯示已刪除常見字']
         for i, m in enumerate(modes):
             self.console.print(i, m)
         mode = int(input('輸入數字(Ctrl + C 離開程式): '))
@@ -119,6 +119,8 @@ class App:
         if len(matchs[0]):
             while True:
                 self.__clean_display()
+                self.console.print(
+                    '{:5s} {:20s} {:3s}'.format('index', '檔名', '匹配度'))
                 for i, v in enumerate(matchs[0]):
                     self.console.print(
                         '{:5d} {:20s} {:1.2f}%'.format(i, v[0], v[2] / matchs[1]))
@@ -151,7 +153,7 @@ class App:
         self.__clean_display()
         commons_word = get_stop_word()
         self.console.print(f'檔名:{patent.name}')
-        self.console.print('以下為常見字')
+        self.console.print('以下為已刪除常見字')
         for i in commons_word:
             self.console.print(i)
         return
