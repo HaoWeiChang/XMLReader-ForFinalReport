@@ -1,12 +1,9 @@
-from ast import keyword
 import re
-from signal import raise_signal
 from typing import Union
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk.tokenize import RegexpTokenizer
 from bs4 import BeautifulSoup, NavigableString, Tag
-from regex import A, W
 
 SoupType = Union[Tag, NavigableString, int]
 
