@@ -284,21 +284,6 @@ class Patent:
             raise Exception(f"請輸入範圍0~{len(keywords)}")
         return keywords[:show] if show else keywords[:show]
 
-    def __find_test(self) -> None:
-        keyList = self.keywords
-        text = self.soup.get_text()
-        keywordList = [x for x in keyList if x[1] > 4]
-        combineList = []
-        for i in keywordList:
-            for j in keywordList:
-                find_pattern = re.compile(
-                    r'\b{} {}\b'.format(i[0], j[0]), re.I)
-                match = find_pattern.findall(text)
-                if len(match) > 1:
-                    combineList.append((match[0], len(match)))
-        combineList.sort(key=lambda tup: tup[1], reverse=True)
-        self.combine_keyword = combineList
-
     def get_keywords(self, num: int = 0):
         if len(self.keywords) == 0:
             self.__find_keywords()
