@@ -72,7 +72,7 @@ class App:
     def __print_keywords(self, patent: Patent):
         keywords = []
         num = input('輸入需顯示關鍵字數量:')
-        num = 0 if num == '\n' or num == ''else int(num)
+        num = 20 if num == '\n' or num == ''else int(num)
         self.__clean_display()
         for _ in track(range(100), description='Finding KeyWords......'):
             keywords = patent.get_keywords(num)
