@@ -6,6 +6,7 @@ from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from nltk.tokenize import RegexpTokenizer
 from bs4 import BeautifulSoup, NavigableString, Tag
+from regex import A, W
 
 SoupType = Union[Tag, NavigableString, int]
 
@@ -310,8 +311,10 @@ class Patent:
             self.__find_combine_keywords()
         return self.combine_keyword[:num] if num else self.combine_keyword
 
-    def get_name(self):
-        return self.name
+    def find_text_match(self, text: str):
+        text = self.soup.get_text()
+        test = re.findall('\\b{}\\b'.format(text), A, re.M)
+        return test
 
 
 paten_list = list[Patent]

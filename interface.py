@@ -62,8 +62,9 @@ class App:
 
     def __print_keywords(self, patent: Patent):
         keywords = []
-        num = input('輸入需顯示關鍵字數量')
+        num = input('輸入需顯示關鍵字數量:')
         num = 0 if num == '\n' or num == ''else int(num)
+        self.__clean_display()
         for _ in track(range(100), description='Finding KeyWords......'):
             keywords = patent.get_keywords(num)
         if keywords != 0:
@@ -82,7 +83,7 @@ class App:
             show = 20 if show == '' else int(show)
             self.__clean_display()
             for _ in track(range(10), description='尋找組合關鍵字'):
-                keywords = patent.find_test(lenth, show)
+                keywords = patent.find_combine_keywords(lenth, show)
             if keywords != 0:
                 self.console.print(
                     '{:5s} {:50s} {:5s}'.format('index', 'keyword', 'total'))
