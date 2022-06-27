@@ -39,7 +39,7 @@ class Patent:
         res.append(self.__format_claims(
             self.soup.find("us-claim-statement"), self.soup.find("claims")))
         contents = "\n\n".join(res)
-        with open(self.name+".txt", "w") as file:
+        with open(self.name+".txt", "w", encoding='UTF-8') as file:
             file.write(contents)
         file.close()
 
