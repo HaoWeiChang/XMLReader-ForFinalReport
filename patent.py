@@ -18,6 +18,7 @@ class Patent:
         self.soup = self.__readSoup()
         self.keywords = []
         self.combine_keyword = []
+        self.combine_length = 2
 
     def __readSoup(self) -> BeautifulSoup:
         xml_text = open(self.path, "r").read()
@@ -255,9 +256,7 @@ class Patent:
         self.keywords = [word for word in keywordList if word[0].lower()
                          not in en_stops]
 
-    def find_combine_keywords(self, length: int = 2, show: int = 0) -> None:
-        if length < 2 or length > 5:
-            raise Exception(f'目前僅提供2~5個字組合關鍵字')
+    def __find_combine_keywords(self, length: int = 2) -> None:
         text = self.soup.get_text()
         calculate = {}
         keywords = []
@@ -280,26 +279,41 @@ class Patent:
             if values > 1:
                 keywords.append((key, values))
         keywords.sort(key=lambda tup: tup[1], reverse=True)
-        if show < 0 or show > len(keywords):
-            raise Exception(f"請輸入範圍0~{len(keywords)}")
-        return keywords[:show] if show else keywords[:show]
+        self.combine_keyword = keywords
 
     def get_keywords(self, num: int = 0):
         if len(self.keywords) == 0:
             self.__find_keywords()
         return self.keywords[:num] if num else self.keywords
 
-    def get_combine_keywords(self, num: int = 0):
+    def get_combine_keywords(self, length: int = 2, show: int = 0):
+        if length < 2 or length > 5:
+            raise Exception(f'目前僅提供2~5個字組合關鍵字')
         if len(self.keywords) == 0:
             self.__find_keywords()
-        if len(self.combine_keyword) == 0:
-            self.__find_combine_keywords()
-        return self.combine_keyword[:num] if num else self.combine_keyword
+        if len(self.combine_keyword) == 0 or self.combine_length != length:
+            self.__find_combine_keywords(length)
+        if show < 0 or show > len(self.combine_keyword):
+            raise Exception(f"請輸入範圍0~{len(self.combine_keyword)}")
+        return self.combine_keyword[:show] if show else self.combine_keyword
 
     def find_text_match(self, text: str):
-        text = self.soup.get_text()
-        test = re.findall('\\b{}\\b'.format(text), A, re.M)
-        return test
+        en_stops = set(stopwords.words('english'))
+        if text in en_stops:
+            return ([], 0)
+        res = []
+        content = self.soup.get_text()
+        regex_unique = re.compile('\\b{}\\b'.format(text), re.I)
+        lines = list(filter(None, content.split('\n')))
+        for line in lines:
+            match = re.search(regex_unique, line)
+            if match:
+                res.append(line)
+        return (self.name, res, len(res))
+
+
+def get_stop_word():
+    return set(stopwords.words('english'))
 
 
 paten_list = list[Patent]
